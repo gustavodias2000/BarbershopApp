@@ -13,6 +13,7 @@ import {
 import { db, auth } from '../../firebase';
 import { collection, getDocs, addDoc, query, where, orderBy } from 'firebase/firestore';
 import WhatsAppService from '../services/WhatsAppService';
+import NotificationService from '../services/NotificationService';
 
 export default function ClienteHome({ navigation }) {
   const [barbeiros, setBarbeiros] = useState([]);
@@ -22,6 +23,8 @@ export default function ClienteHome({ navigation }) {
 
   useEffect(() => {
     fetchData();
+    // Configurar notificações
+    NotificationService.getFCMToken();
   }, []);
 
   const fetchData = async () => {

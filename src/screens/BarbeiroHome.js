@@ -12,11 +12,13 @@ import {
 import { db, auth } from '../../firebase';
 import { collection, getDocs, updateDoc, doc, query, orderBy } from 'firebase/firestore';
 import WhatsAppService from '../services/WhatsAppService';
+import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 export default function BarbeiroHome({ navigation }) {
   const [agendamentos, setAgendamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [stats, setStats] = useState({
     pendentes: 0,
     confirmados: 0,
@@ -264,46 +266,62 @@ export default function BarbeiroHome({ navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Painel do Barbeiro</Text>
-        <TouchableOpacity 
-          style={styles.profileButton}
-          onPress={() => auth.signOut()}
-        >
-          <Text style={styles.profileButtonText}>Sair</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.pendentes}</Text>
-          <Text style={styles.statLabel}>Pendentes</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.confirmados}</Text>
-          <Text style={styles.statLabel}>Confirmados</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.total}</Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-      </View>
-
-      <FlatList
-        data={agendamentos}
-        keyExtractor={item => item.id}
-        renderItem={renderAgendamento}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Nenhum agendamento encontrado</Text>
-            <Text style={styles.emptySubtext}>
-              Os agendamentos aparecerão aqui quando os clientes solicitarem
+        <View style={styles.headerButtons}>
+          <TouchableOpacity 
+            style={styles.analyticsButton}
+            onPress={() => setShowAnalytics(!showAnalytics)}
+          >
+            <Text style={styles.analyticsButtonText}>
+              {showAnalytics ? 'Agendamentos' : 'Analytics'}
             </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.profileButton}
+            onPress={() => auth.signOut()}
+          >
+            <Text style={styles.profileButtonText}>Sair</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {showAnalytics ? (
+        <AnalyticsDashboard barbeiroId="barbeiro-id-atual" />
+      ) : (
+        <>
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{stats.pendentes}</Text>
+              <Text style={styles.statLabel}>Pendentes</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{stats.confirmados}</Text>
+              <Text style={styles.statLabel}>Confirmados</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{stats.total}</Text>
+              <Text style={styles.statLabel}>Total</Text>
+            </View>
           </View>
-        }
-        contentContainerStyle={agendamentos.length === 0 && styles.emptyList}
-      />
+
+          <FlatList
+            data={agendamentos}
+            keyExtractor={item => item.id}
+            renderItem={renderAgendamento}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Nenhum agendamento encontrado</Text>
+                <Text style={styles.emptySubtext}>
+                  Os agendamentos aparecerão aqui quando os clientes solicitarem
+                </Text>
+              </View>
+            }
+            contentContainerStyle={agendamentos.length === 0 && styles.emptyList}
+          />
+        </>
+      )}
     </View>
   );
 }
@@ -337,6 +355,22 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#2c3e50',
+    flex: 1,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  analyticsButton: {
+    backgroundColor: '#9b59b6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  analyticsButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
   },
   profileButton: {
     backgroundColor: '#e74c3c',
@@ -347,6 +381,7 @@ const styles = StyleSheet.create({
   profileButtonText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: 14,
   },
   statsContainer: {
     flexDirection: 'row',

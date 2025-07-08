@@ -12,12 +12,15 @@ import {
 import { db, auth } from '../../firebase';
 import { collection, query, where, orderBy, getDocs, updateDoc, doc } from 'firebase/firestore';
 import WhatsAppService from '../services/WhatsAppService';
+import RatingComponent from '../components/RatingComponent';
 
 export default function HistoricoScreen({ navigation }) {
   const [agendamentos, setAgendamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filtro, setFiltro] = useState('todos'); // todos, pendentes, confirmados, cancelados
+  const [showRating, setShowRating] = useState(false);
+  const [selectedAgendamento, setSelectedAgendamento] = useState(null);
 
   useEffect(() => {
     fetchAgendamentos();
@@ -194,6 +197,20 @@ Horário liberado para outros clientes.`;
           </TouchableOpacity>
         </View>
       )}
+
+      {item.status === 'confirmado' && (
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.avaliarButton]}
+            onPress={() => {
+              setSelectedAgendamento(item);
+              setShowRating(true);
+            }}
+          >
+            <Text style={styles.actionButtonText}>Avaliar</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 
@@ -264,6 +281,16 @@ Horário liberado para outros clientes.`;
           </View>
         }
         contentContainerStyle={agendamentos.length === 0 && styles.emptyList}
+      />
+
+      <RatingComponent
+        visible={showRating}
+        onClose={() => {
+          setShowRating(false);
+          setSelectedAgendamento(null);
+          fetchAgendamentos(); // Refresh para mostrar status atualizado
+        }}
+        agendamento={selectedAgendamento}
       />
     </View>
   );
@@ -398,6 +425,9 @@ const styles = StyleSheet.create({
   },
   reagendarButton: {
     backgroundColor: '#3498db',
+  },
+  avaliarButton: {
+    backgroundColor: '#9b59b6',
   },
   actionButtonText: {
     color: '#fff',
