@@ -7,6 +7,7 @@ import ClienteHome from './src/screens/ClienteHome';
 import BarbeiroHome from './src/screens/BarbeiroHome';
 import AgendamentoScreen from './src/screens/AgendamentoScreen';
 import HistoricoScreen from './src/screens/HistoricoScreen';
+import PaymentScreen from './src/screens/PaymentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -56,6 +57,11 @@ export default function App() {
             name="Historico" 
             component={HistoricoScreen} 
             options={{ title: 'Histórico' }}
+          />
+          <Stack.Screen 
+            name="Payment" 
+            component={PaymentScreen} 
+            options={{ title: 'Pagamento' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

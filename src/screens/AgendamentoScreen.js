@@ -11,6 +11,8 @@ import {
 import { db, auth } from '../../firebase';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import WhatsAppService from '../services/WhatsAppService';
+import PaymentModal from '../components/PaymentModal';
+import CalendarService from '../services/CalendarService';
 
 export default function AgendamentoScreen({ route, navigation }) {
   const { barbeiro } = route.params;
@@ -19,6 +21,8 @@ export default function AgendamentoScreen({ route, navigation }) {
   const [availableTimes, setAvailableTimes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [agendamentosExistentes, setAgendamentosExistentes] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [createdAgendamento, setCreatedAgendamento] = useState(null);
 
   // Horários disponíveis (9h às 18h)
   const horariosPadrao = [
@@ -117,42 +121,72 @@ export default function AgendamentoScreen({ route, navigation }) {
       // Salvar no Firestore
       await addDoc(collection(db, 'agendamentos'), novoAgendamento);
       
+      setCreatedAgendamento(novoAgendamento);
+      setShowPaymentModal(true);
+      
+    } catch (error) {
+      console.error('Erro ao agendar:', error);
+      Alert.alert('Erro', 'Não foi possível realizar o agendamento.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (paymentResult) => {
+    try {
       // Enviar mensagem via WhatsApp
       const clienteInfo = {
-        nome: novoAgendamento.clienteNome,
-        email: userEmail
+        nome: createdAgendamento.clienteNome,
+        email: auth.currentUser?.email
       };
 
       const mensagem = WhatsAppService.gerarMensagemAgendamento(
-        barbeiro,
+        { ...barbeiro, telefone: createdAgendamento.barbeiroTelefone },
         clienteInfo,
-        selectedDate,
-        selectedTime
+        createdAgendamento.data,
+        createdAgendamento.horario
       );
 
       const whatsappEnviado = await WhatsAppService.sendTextMessage(
-        barbeiro.telefone || '5511999999999',
+        createdAgendamento.barbeiroTelefone,
         mensagem
       );
 
       if (whatsappEnviado) {
         Alert.alert(
           'Sucesso!', 
-          `Agendamento solicitado para ${selectedDate} às ${selectedTime}. Mensagem enviada via WhatsApp!`,
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
+          `Agendamento pago e confirmado! Mensagem enviada via WhatsApp.`,
+          [
+            { text: 'OK', onPress: () => navigation.goBack() },
+            { 
+              text: 'Adicionar ao Calendário', 
+              onPress: async () => {
+                await CalendarService.addAgendamentoToCalendar(novoAgendamento);
+                navigation.goBack();
+              }
+            }
+          ]
         );
       } else {
         Alert.alert(
-          'Agendamento Criado', 
-          `Agendamento solicitado para ${selectedDate} às ${selectedTime}. Entre em contato para confirmar.`,
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
+          'Agendamento Pago', 
+          `Agendamento pago com sucesso! Entre em contato para confirmar.`,
+          [
+            { text: 'OK', onPress: () => navigation.goBack() },
+            { 
+              text: 'Adicionar ao Calendário', 
+              onPress: async () => {
+                await CalendarService.addAgendamentoToCalendar(novoAgendamento);
+                navigation.goBack();
+              }
+            }
+          ]
         );
       }
     } catch (error) {
-      console.error('Erro ao agendar:', error);
-      Alert.alert('Erro', 'Não foi possível realizar o agendamento.');
-    } finally {
-      setLoading(false);
+      console.error('Erro pós-pagamento:', error);
+      Alert.alert('Pagamento realizado', 'Agendamento pago, mas houve erro no envio da mensagem.');
+      navigation.goBack();
     }
   };
 
@@ -219,6 +253,17 @@ export default function AgendamentoScreen({ route, navigation }) {
           )}
         </View>
       )}
+
+      <PaymentModal
+        visible={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setCreatedAgendamento(null);
+          navigation.goBack();
+        }}
+        agendamento={createdAgendamento}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
 
       {selectedDate && selectedTime && (
         <View style={styles.confirmSection}>
