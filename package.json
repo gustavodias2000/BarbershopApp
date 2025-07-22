@@ -6,7 +6,7 @@
     "android": "bash -c 'react-native run-android'",
     "ios": "bash -c 'react-native run-ios'",
     "lint": "eslint .",
-    "start": "react-native start --no-interactive",
+    "start": "bash -c 'react-native start --no-interactive'",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
